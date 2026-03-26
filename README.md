@@ -6,7 +6,7 @@ Il progetto affronta il problema della deduplicazione di immagini all'interno de
 
 # Obiettivi
 
-L'obiettivo del sistema è quello di identificare true categorie di immagini: 
+L'obiettivo del sistema è quello di identificare tre categorie di immagini: 
 
 1) Duplicati esatti ( Stesso contenuto )
 2) Quasi duplicati ( Immagini simili visivamente ma non identiche in senso stretto )
