@@ -2,6 +2,7 @@ package com.tdm.deduplication.runner;
 
 import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
+import com.tdm.deduplication.service.CsvReportService;
 import com.tdm.deduplication.service.DeduplicationService;
 import com.tdm.deduplication.service.ImageScannerService;
 import org.slf4j.Logger;
@@ -24,34 +25,31 @@ public class DeduplicationApplication implements CommandLineRunner {
     @Autowired
     private DeduplicationService deduplicationService;
 
+    @Autowired
+    private CsvReportService csvReportService;
+
     public static void main(String[] args) {
         SpringApplication.run(DeduplicationApplication.class, args);
     }
 
     @Override
     public void run(String... args) {
-        System.out.println("_-^****************************************^-_");
-        System.out.println("   *** Avvio Deduplicatore Immagini TDM ***   ");
-        System.out.println("_-^****************************************^-_");
-
         if (args.length == 0) {
-            System.err.println("Errore: Fornire il percorso della directory come argomento.");
-            System.out.println("Uso: mvn spring-boot:run -Dspring-boot.run.arguments=\"/percorso/cartella\"");
+            System.out.println("Uso: java -jar app.jar <directory_immagini>");
             return;
         }
 
         String inputDirectory = args[0];
-        System.out.println("Directory di input configurata: " + inputDirectory);
-        System.out.println("Avvio scansione ed estrazione metadati EXIF...");
+        String outputCsv = "deduplication-report.csv";
 
-        List<ImageModel> imageList = imageScanService.scan(inputDirectory);
-        System.out.println("Scansione completata. Immagini valide trovate: " + imageList.size());
+        List<ImageModel> images = imageScanService.scan(inputDirectory);
+        System.out.println("Immagini trovate: " + images.size());
+        images.forEach(image -> logger.info("Immagine: {}", image));
 
-        List<DuplicateGroup> groups = deduplicationService.findDuplicates(imageList);
+        List<DuplicateGroup> groups = deduplicationService.findDuplicates(images);
         System.out.println("Gruppi duplicati trovati: " + groups.size());
 
-        groups.forEach(group -> {
-            group.getImages().forEach(image -> logger.info("Immagine duplicata trovata: {}", image));
-        });
+        csvReportService.writeReport(groups, outputCsv);
+        System.out.println("Report scritto in: " + outputCsv);
     }
 }
