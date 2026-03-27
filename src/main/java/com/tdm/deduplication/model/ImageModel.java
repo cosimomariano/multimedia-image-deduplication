@@ -12,6 +12,10 @@ public class ImageModel {
     private String fileFormat;
     private LocalDateTime originalDate;
 
+    private String differentialSignature;
+    private String groupId;
+    private double bestDistance;
+
     public ImageModel(Path filePath) {
         this.filePath = filePath;
     }
@@ -64,15 +68,39 @@ public class ImageModel {
         this.originalDate = originalDate;
     }
 
+    public String getDifferentialSignature() {
+        return differentialSignature;
+    }
+
+    public void setDifferentialSignature(String differentialSignature) {
+        this.differentialSignature = differentialSignature;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public double getBestDistance() {
+        return bestDistance;
+    }
+
+    public void setBestDistance(double bestDistance) {
+        this.bestDistance = bestDistance;
+    }
+
     @Override
     public String toString() {
         return "ImageModel{" +
-                "filePath=" + filePath +
-                ", fileSize=" + fileSize +
-                ", width=" + width +
-                ", height=" + height +
-                ", fileFormat='" + fileFormat + '\'' +
-                ", originalDate=" + originalDate +
-                '}';
+                "\n" + "filePath=" + filePath +
+                "\n" + ", fileSize=" + fileSize +
+                "\n" + ", width=" + width +
+                "\n" + ", height=" + height +
+                "\n" + ", fileFormat='" + fileFormat + '\'' +
+                "\n" + ", originalDate=" + originalDate +
+                "\n" + "}\n";
     }
 }
