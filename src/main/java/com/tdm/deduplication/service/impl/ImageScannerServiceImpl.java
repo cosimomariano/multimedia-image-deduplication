@@ -101,7 +101,10 @@ public class ImageScannerServiceImpl implements ImageScannerService {
      */
     private ImageModel readImageModel(Path path) {
         try {
-            BufferedImage image = ImageIO.read(path.toFile());
+            BufferedImage image = readImage(path);
+            if (image == null) {
+                return null;
+            }
 
             if (image == null) {
                 System.err.println("File non letto come immagine: " + path);
@@ -120,6 +123,20 @@ public class ImageScannerServiceImpl implements ImageScannerService {
 
         } catch (Exception e) {
             System.err.println("Errore nella lettura di " + path + ": " + e.getMessage());
+            return null;
+        }
+    }
+
+    private BufferedImage readImage(Path path) {
+        try {
+            BufferedImage image = ImageIO.read(path.toFile());
+            if (image != null) {
+                return image;
+            }
+
+            return javax.imageio.ImageIO.read(path.toFile());
+
+        } catch (Exception e) {
             return null;
         }
     }
@@ -147,13 +164,8 @@ public class ImageScannerServiceImpl implements ImageScannerService {
     }
 
     private String getExtension(Path path) {
-        String fileName = path.getFileName().toString();
-        int dotIndex = fileName.lastIndexOf('.');
-
-        if (dotIndex < 0 || dotIndex == fileName.length() - 1) {
-            return "";
-        }
-
-        return fileName.substring(dotIndex + 1).toUpperCase();
+        String name = path.getFileName().toString().toLowerCase();
+        int dotIndex = name.lastIndexOf(".");
+        return dotIndex != -1 ? name.substring(dotIndex + 1) : "";
     }
 }

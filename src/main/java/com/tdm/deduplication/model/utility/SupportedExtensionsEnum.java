@@ -6,7 +6,9 @@ public enum SupportedExtensionsEnum {
      */
     JPG("jpg"),
     JPEG("jpeg"),
-    PNG("png");
+    PNG("png"),
+    TIF("tif"),
+    TIFF("tiff");
 
     private final String extension;
 
