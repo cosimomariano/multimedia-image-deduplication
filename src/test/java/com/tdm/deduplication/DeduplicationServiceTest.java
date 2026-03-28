@@ -12,6 +12,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -54,6 +55,37 @@ class DeduplicationServiceTest {
 
         assertTrue(zeroDistanceCount >= 1, "Almeno un'immagine del gruppo deve avere distanza 0");
     }
+
+
+    @Test
+    void testFindDuplicates_DoesNotCreateResizedFilesNextToOriginals(@TempDir Path tempDir) throws IOException {
+        File img1 = tempDir.resolve("originale.png").toFile();
+        File img2 = tempDir.resolve("copia.png").toFile();
+
+        createNoiseImage(img1, 555);
+        createNoiseImage(img2, 555);
+
+        long filesBefore;
+        try (var files = Files.list(tempDir)) {
+            filesBefore = files.count();
+        }
+
+        List<ImageModel> records = Arrays.asList(
+                new ImageModel(img1.toPath()),
+                new ImageModel(img2.toPath())
+        );
+
+        deduplicationService.findDuplicates(records);
+
+        long filesAfter;
+        try (var files = Files.list(tempDir)) {
+            filesAfter = files.count();
+        }
+
+        assertEquals(filesBefore, filesAfter,
+                "Il servizio non deve creare copie ridimensionate nella cartella delle immagini originali");
+    }
+
 
     @Test
     void testFindDuplicates_WithCompletelyDifferentImages(@TempDir Path tempDir) throws IOException {

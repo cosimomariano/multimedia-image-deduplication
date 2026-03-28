@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,6 +74,8 @@ public class DeduplicationServiceImpl implements DeduplicationService {
     }
 
     private void extractFeatures(ImageModel image) {
+        Path temporaryResizedPath = null;
+
         try {
             BufferedImage original = ImageIO.read(image.getFilePath().toFile());
 
@@ -78,7 +83,12 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                 throw new IllegalStateException("Immagine non leggibile: " + image.getFilePath());
             }
 
-            BufferedImage resized = resize(original, NORMALIZED_WIDTH, NORMALIZED_HEIGHT);
+            temporaryResizedPath = createTemporaryResizedCopy(original);
+            BufferedImage resized = ImageIO.read(temporaryResizedPath.toFile());
+
+            if (resized == null) {
+                throw new IllegalStateException("Impossibile leggere la copia temporanea ridimensionata: " + temporaryResizedPath);
+            }
 
             int height = resized.getHeight();
             int width = resized.getWidth();
@@ -114,6 +124,31 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                     "Errore nella generazione delle caratteristiche per " + image.getFilePath(),
                     e
             );
+        } finally {
+            deleteTemporaryFile(temporaryResizedPath);
+        }
+    }
+
+
+    private Path createTemporaryResizedCopy(BufferedImage source) throws IOException {
+        BufferedImage resized = resize(source);
+        Path temporaryFile = Files.createTempFile("tdm-resized-", ".png");
+
+        if (!ImageIO.write(resized, "png", temporaryFile.toFile())) {
+            throw new IOException("Impossibile salvare la copia temporanea ridimensionata");
+        }
+
+        return temporaryFile;
+    }
+
+    private void deleteTemporaryFile(Path temporaryFile) {
+        if (temporaryFile == null) {
+            return;
+        }
+
+        try {
+            Files.deleteIfExists(temporaryFile);
+        } catch (IOException ignored) {
         }
     }
 
@@ -177,8 +212,8 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         return sum / first.length;
     }
 
-    private BufferedImage resize(BufferedImage source, int width, int height) {
-        BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+    private BufferedImage resize(BufferedImage source) {
+        BufferedImage resized = new BufferedImage(DeduplicationServiceImpl.NORMALIZED_WIDTH, DeduplicationServiceImpl.NORMALIZED_HEIGHT, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = resized.createGraphics();
 
         graphics.setRenderingHint(
@@ -186,7 +221,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                 RenderingHints.VALUE_INTERPOLATION_BILINEAR
         );
 
-        graphics.drawImage(source, 0, 0, width, height, null);
+        graphics.drawImage(source, 0, 0, DeduplicationServiceImpl.NORMALIZED_WIDTH, DeduplicationServiceImpl.NORMALIZED_HEIGHT, null);
         graphics.dispose();
 
         return resized;
