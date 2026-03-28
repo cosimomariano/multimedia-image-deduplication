@@ -1,6 +1,8 @@
 package com.tdm.deduplication;
 
 import com.tdm.deduplication.model.ImageModel;
+import com.tdm.deduplication.service.ExifExtractionService;
+import com.tdm.deduplication.service.impl.ExifExtractionServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import com.tdm.deduplication.service.ImageScannerService;
@@ -17,7 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ImageScanServiceTest {
 
-    private final ImageScannerService imageScanService = new ImageScannerServiceImpl();
+    private final ExifExtractionService exifExtractionService = new ExifExtractionServiceImpl();
+    private final ImageScannerService imageScanService = new ImageScannerServiceImpl(exifExtractionService);
 
     @Test
     void testDirectoryScanningAndFiltering(@TempDir Path tempDir) throws IOException {

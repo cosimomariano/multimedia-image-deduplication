@@ -2,6 +2,8 @@ package com.tdm.deduplication.model;
 
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class ImageModel {
 
@@ -18,6 +20,16 @@ public class ImageModel {
 
     private double[] chrominanceCbSignature;
     private double[] chrominanceCrSignature;
+
+    private Map<String, String> exifMetadata = new LinkedHashMap<>();
+
+    public Map<String, String> getExifMetadata() {
+        return exifMetadata;
+    }
+
+    public void setExifMetadata(Map<String, String> exifMetadata) {
+        this.exifMetadata = exifMetadata;
+    }
 
     public double[] getChrominanceCbSignature() {
         return chrominanceCbSignature;
@@ -37,6 +49,9 @@ public class ImageModel {
 
     public ImageModel(Path filePath) {
         this.filePath = filePath;
+    }
+
+    public ImageModel() {
     }
 
     public Path getFilePath() {
@@ -120,6 +135,7 @@ public class ImageModel {
                 "\n" + ", height=" + height +
                 "\n" + ", fileFormat='" + fileFormat + '\'' +
                 "\n" + ", originalDate=" + originalDate +
+                "\n" + ", exifMetadata=" + exifMetadata +
                 "\n" + "}\n";
     }
 }

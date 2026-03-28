@@ -24,6 +24,7 @@ public class CsvReportServiceImpl implements CsvReportService {
                     "height",
                     "format",
                     "original_date",
+                    "exif_metadata",
                     "distance"
             });
 
@@ -37,6 +38,7 @@ public class CsvReportServiceImpl implements CsvReportService {
                             String.valueOf(image.getHeight()),
                             image.getFileFormat(),
                             image.getOriginalDate() != null ? image.getOriginalDate().toString() : "",
+                            serializeExifMetadata(image),
                             String.valueOf(image.getBestDistance())
                     });
                 }
@@ -45,5 +47,20 @@ public class CsvReportServiceImpl implements CsvReportService {
         } catch (IOException e) {
             throw new RuntimeException("Errore nella scrittura del CSV", e);
         }
+    }
+
+    // METODI PRIVATI
+
+    private String serializeExifMetadata(ImageModel image) {
+        if (image.getExifMetadata() == null || image.getExifMetadata().isEmpty()) {
+            return "";
+        }
+
+        return image.getExifMetadata()
+                .entrySet()
+                .stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .reduce((left, right) -> left + " | " + right)
+                .orElse("");
     }
 }

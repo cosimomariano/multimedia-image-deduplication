@@ -5,10 +5,11 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.model.utility.SupportedExtensionsEnum;
+import com.tdm.deduplication.service.ExifExtractionService;
+import com.tdm.deduplication.service.ImageScannerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import com.tdm.deduplication.service.ImageScannerService;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -16,11 +17,20 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class ImageScannerServiceImpl implements ImageScannerService {
     final Logger logger = LoggerFactory.getLogger(ImageScannerServiceImpl.class);
+
+    private final ExifExtractionService exifExtractionService;
+
+    public ImageScannerServiceImpl(ExifExtractionService exifExtractionService) {
+        this.exifExtractionService = exifExtractionService;
+    }
 
     @Override
     public List<ImageModel> scan(String directoryPath) {
@@ -104,7 +114,7 @@ public class ImageScannerServiceImpl implements ImageScannerService {
             record.setHeight(image.getHeight());
             record.setFileFormat(getExtension(path));
 
-            readExifDate(path, record);
+            exifExtractionService.populateMetadata(path, record);
 
             return record;
 
@@ -115,7 +125,7 @@ public class ImageScannerServiceImpl implements ImageScannerService {
     }
 
     /*
-        Leggo i metadati EXIF del file immagine, in particolare leggo la data dalla mappa chiave valore e la salvo nel model
+        Leggo i metadati EXIF del file immagine
      */
     private void readExifDate(Path path, ImageModel record) {
         try {
