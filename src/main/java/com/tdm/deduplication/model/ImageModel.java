@@ -16,6 +16,25 @@ public class ImageModel {
     private String groupId;
     private double bestDistance;
 
+    private double[] chrominanceCbSignature;
+    private double[] chrominanceCrSignature;
+
+    public double[] getChrominanceCbSignature() {
+        return chrominanceCbSignature;
+    }
+
+    public void setChrominanceCbSignature(double[] chrominanceCbSignature) {
+        this.chrominanceCbSignature = chrominanceCbSignature;
+    }
+
+    public double[] getChrominanceCrSignature() {
+        return chrominanceCrSignature;
+    }
+
+    public void setChrominanceCrSignature(double[] chrominanceCrSignature) {
+        this.chrominanceCrSignature = chrominanceCrSignature;
+    }
+
     public ImageModel(Path filePath) {
         this.filePath = filePath;
     }

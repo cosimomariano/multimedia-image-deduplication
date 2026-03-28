@@ -14,14 +14,20 @@ import java.util.List;
 @Service
 public class DeduplicationServiceImpl implements DeduplicationService {
 
+    // Costanti per gestire la componente della luminanza/generali
     private static final int NORMALIZED_WIDTH = 64;
     private static final int NORMALIZED_HEIGHT = 64;
     private static final int HAMMING_THRESHOLD = 200;
 
+    // Costanti per gestire la componente cromatica
+    private static final int CHROMA_GRID_ROWS = 8;
+    private static final int CHROMA_GRID_COLS = 8;
+    private static final double CHROMA_DISTANCE_THRESHOLD = 20.0;
+
     @Override
     public List<DuplicateGroup> findDuplicates(List<ImageModel> images) {
         for (ImageModel image : images) {
-            image.setDifferentialSignature(buildSignature(image));
+            extractFeatures(image);
         }
 
         List<DuplicateGroup> groups = new ArrayList<>();
@@ -44,14 +50,14 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                     continue;
                 }
 
-                int distance = hammingDistance(
+                int luminanceDistance = hammingDistance(
                         current.getDifferentialSignature(),
                         candidate.getDifferentialSignature()
                 );
 
-                if (distance <= HAMMING_THRESHOLD) {
+                if (luminanceDistance <= HAMMING_THRESHOLD && isChrominanceSimilar(current, candidate)) {
                     candidate.setGroupId(groupId);
-                    candidate.setBestDistance(distance);
+                    candidate.setBestDistance(luminanceDistance);
                     group.addImage(candidate);
                 }
             }
@@ -64,55 +70,138 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         return groups;
     }
 
-    private String buildSignature(ImageModel ImageModel) {
+    private void extractFeatures(ImageModel image) {
         try {
-            BufferedImage original = ImageIO.read(ImageModel.getFilePath().toFile());
+            BufferedImage original = ImageIO.read(image.getFilePath().toFile());
 
             if (original == null) {
-                throw new IllegalStateException("Immagine non leggibile: " + ImageModel.getFilePath());
+                throw new IllegalStateException("Immagine non leggibile: " + image.getFilePath());
             }
 
             BufferedImage resized = resize(original, NORMALIZED_WIDTH, NORMALIZED_HEIGHT);
-            int[][] gray = toGrayMatrix(resized);
 
-            return buildDifferentialBinarySignature(gray);
+            int height = resized.getHeight();
+            int width = resized.getWidth();
+
+            int[][] luminanceMatrix = new int[height][width];
+            double[][] cbMatrix = new double[height][width];
+            double[][] crMatrix = new double[height][width];
+
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    Color color = new Color(resized.getRGB(x, y));
+
+                    int r = color.getRed();
+                    int g = color.getGreen();
+                    int b = color.getBlue();
+
+                    int yValue = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+                    double cbValue = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                    double crValue = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
+
+                    luminanceMatrix[y][x] = yValue;
+                    cbMatrix[y][x] = cbValue;
+                    crMatrix[y][x] = crValue;
+                }
+            }
+
+            image.setDifferentialSignature(buildDifferentialBinarySignature(luminanceMatrix));
+            image.setChrominanceCbSignature(buildBlockChrominanceSignature(cbMatrix));
+            image.setChrominanceCrSignature(buildBlockChrominanceSignature(crMatrix));
 
         } catch (Exception e) {
-            throw new RuntimeException("Errore nella generazione della firma per " + ImageModel.getFilePath(), e);
+            throw new RuntimeException(
+                    "Errore nella generazione delle caratteristiche per " + image.getFilePath(),
+                    e
+            );
         }
+    }
+
+    private double[] buildBlockChrominanceSignature(double[][] chromaMatrix) {
+        int blockHeight = chromaMatrix.length / CHROMA_GRID_ROWS;
+        int blockWidth = chromaMatrix[0].length / CHROMA_GRID_COLS;
+
+        double[] signature = new double[CHROMA_GRID_ROWS * CHROMA_GRID_COLS];
+        int index = 0;
+
+        for (int blockRow = 0; blockRow < CHROMA_GRID_ROWS; blockRow++) {
+            for (int blockCol = 0; blockCol < CHROMA_GRID_COLS; blockCol++) {
+                double sum = 0.0;
+                int count = 0;
+
+                int startY = blockRow * blockHeight;
+                int endY = startY + blockHeight;
+                int startX = blockCol * blockWidth;
+                int endX = startX + blockWidth;
+
+                for (int y = startY; y < endY; y++) {
+                    for (int x = startX; x < endX; x++) {
+                        sum += chromaMatrix[y][x];
+                        count++;
+                    }
+                }
+
+                signature[index++] = sum / count;
+            }
+        }
+
+        return signature;
+    }
+
+    private boolean isChrominanceSimilar(ImageModel first, ImageModel second) {
+        double cbDistance = averageVectorDistance(
+                first.getChrominanceCbSignature(),
+                second.getChrominanceCbSignature()
+        );
+
+        double crDistance = averageVectorDistance(
+                first.getChrominanceCrSignature(),
+                second.getChrominanceCrSignature()
+        );
+
+        return cbDistance <= CHROMA_DISTANCE_THRESHOLD
+                && crDistance <= CHROMA_DISTANCE_THRESHOLD;
+    }
+
+    private double averageVectorDistance(double[] first, double[] second) {
+        if (first.length != second.length) {
+            throw new IllegalArgumentException("Le firme cromatiche devono avere la stessa lunghezza");
+        }
+
+        double sum = 0.0;
+
+        for (int i = 0; i < first.length; i++) {
+            sum += Math.abs(first[i] - second[i]);
+        }
+
+        return sum / first.length;
     }
 
     private BufferedImage resize(BufferedImage source, int width, int height) {
         BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g = resized.createGraphics();
-        g.drawImage(source, 0, 0, width, height, null);
-        g.dispose();
+        Graphics2D graphics = resized.createGraphics();
+
+        graphics.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR
+        );
+
+        graphics.drawImage(source, 0, 0, width, height, null);
+        graphics.dispose();
+
         return resized;
     }
 
-    private int[][] toGrayMatrix(BufferedImage image) {
-        int[][] gray = new int[image.getHeight()][image.getWidth()];
+    private String buildDifferentialBinarySignature(int[][] luminanceMatrix) {
+        int height = luminanceMatrix.length;
+        int width = luminanceMatrix[0].length;
 
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                Color color = new Color(image.getRGB(x, y));
-                int luminance = (int) (0.299 * color.getRed()
-                        + 0.587 * color.getGreen()
-                        + 0.114 * color.getBlue());
-                gray[y][x] = luminance;
-            }
-        }
+        StringBuilder signature = new StringBuilder(height * (width - 1));
 
-        return gray;
-    }
-
-    private String buildDifferentialBinarySignature(int[][] gray) {
-        StringBuilder signature = new StringBuilder();
-
-        for (int y = 0; y < gray.length; y++) {
-            for (int x = 1; x < gray[y].length; x++) {
-                int predicted = gray[y][x - 1];
-                int residual = gray[y][x] - predicted;
+        for (int y = 0; y < height; y++) {
+            for (int x = 1; x < width; x++) {
+                int predicted = luminanceMatrix[y][x - 1];
+                int residual = luminanceMatrix[y][x] - predicted;
 
                 if (residual > 0) {
                     signature.append('1');
