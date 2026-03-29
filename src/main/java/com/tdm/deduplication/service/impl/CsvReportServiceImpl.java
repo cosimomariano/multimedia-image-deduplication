@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,6 +17,18 @@ import java.util.stream.Collectors;
 public class CsvReportServiceImpl implements CsvReportService {
 
     private static final Logger logger = LoggerFactory.getLogger(CsvReportServiceImpl.class);
+
+    /**
+     * Soglia molto stretta per dire che due immagini sono praticamente identiche
+     * dopo la normalizzazione.
+     */
+    private static final double EXACT_LUMINANCE_MSE_THRESHOLD = 1.0;
+
+    /**
+     * Soglia molto stretta sulla crominanza per distinguere un duplicato esatto
+     * da un quasi duplicato.
+     */
+    private static final double EXACT_CHROMA_DISTANCE_THRESHOLD = 1.0;
 
     @Override
     public void writeReport(List<ImageModel> images, String outputPath) {
@@ -73,7 +84,7 @@ public class CsvReportServiceImpl implements CsvReportService {
 
         boolean hasExactCompanion = groupImages.stream()
                 .filter(other -> other != image)
-                .anyMatch(other -> haveSameFeatures(image, other));
+                .anyMatch(other -> isExactDuplicate(image, other));
 
         if (hasExactCompanion) {
             return "EXACT_DUPLICATE";
@@ -82,11 +93,66 @@ public class CsvReportServiceImpl implements CsvReportService {
         return "NEAR_DUPLICATE";
     }
 
-    private boolean haveSameFeatures(ImageModel first, ImageModel second) {
-        return first.getDifferentialSignature() != null
-                && first.getDifferentialSignature().equals(second.getDifferentialSignature())
-                && Arrays.equals(first.getChrominanceCbSignature(), second.getChrominanceCbSignature())
-                && Arrays.equals(first.getChrominanceCrSignature(), second.getChrominanceCrSignature());
+    private boolean isExactDuplicate(ImageModel first, ImageModel second) {
+        if (first.getLuminanceSignature() == null || second.getLuminanceSignature() == null) {
+            return false;
+        }
+
+        if (first.getChrominanceCbSignature() == null || second.getChrominanceCbSignature() == null) {
+            return false;
+        }
+
+        if (first.getChrominanceCrSignature() == null || second.getChrominanceCrSignature() == null) {
+            return false;
+        }
+
+        double luminanceMse = computeMeanSquaredError(
+                first.getLuminanceSignature(),
+                second.getLuminanceSignature()
+        );
+
+        double cbDistance = averageVectorDistance(
+                first.getChrominanceCbSignature(),
+                second.getChrominanceCbSignature()
+        );
+
+        double crDistance = averageVectorDistance(
+                first.getChrominanceCrSignature(),
+                second.getChrominanceCrSignature()
+        );
+
+        return luminanceMse <= EXACT_LUMINANCE_MSE_THRESHOLD
+                && cbDistance <= EXACT_CHROMA_DISTANCE_THRESHOLD
+                && crDistance <= EXACT_CHROMA_DISTANCE_THRESHOLD;
+    }
+
+    private double computeMeanSquaredError(double[] first, double[] second) {
+        if (first.length != second.length) {
+            throw new IllegalArgumentException("Le firme di luminanza devono avere la stessa lunghezza");
+        }
+
+        double sum = 0.0;
+
+        for (int i = 0; i < first.length; i++) {
+            double difference = first[i] - second[i];
+            sum += difference * difference;
+        }
+
+        return sum / first.length;
+    }
+
+    private double averageVectorDistance(double[] first, double[] second) {
+        if (first.length != second.length) {
+            throw new IllegalArgumentException("Le firme cromatiche devono avere la stessa lunghezza");
+        }
+
+        double sum = 0.0;
+
+        for (int i = 0; i < first.length; i++) {
+            sum += Math.abs(first[i] - second[i]);
+        }
+
+        return sum / first.length;
     }
 
     private String serializeExifMetadata(ImageModel image) {

@@ -16,12 +16,21 @@ public class ImageModel {
 
     private String differentialSignature;
     private String groupId;
-    private double bestDistance;
+    private Double  bestDistance;
 
+    private double[] luminanceSignature;
     private double[] chrominanceCbSignature;
     private double[] chrominanceCrSignature;
 
     private Map<String, String> exifMetadata = new LinkedHashMap<>();
+
+    public double[] getLuminanceSignature() {
+        return luminanceSignature;
+    }
+
+    public void setLuminanceSignature(double[] luminanceSignature) {
+        this.luminanceSignature = luminanceSignature;
+    }
 
     public Map<String, String> getExifMetadata() {
         return exifMetadata;
@@ -118,11 +127,11 @@ public class ImageModel {
         this.groupId = groupId;
     }
 
-    public double getBestDistance() {
+    public Double getBestDistance() {
         return bestDistance;
     }
 
-    public void setBestDistance(double bestDistance) {
+    public void setBestDistance(Double bestDistance) {
         this.bestDistance = bestDistance;
     }
 

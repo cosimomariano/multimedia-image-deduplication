@@ -46,16 +46,17 @@ class DeduplicationServiceTest {
 
         for (ImageModel image : group.getImages()) {
             assertNotNull(image.getGroupId(), "Ogni immagine del gruppo deve avere un groupId");
-            assertNotNull(image.getDifferentialSignature(), "Ogni immagine deve avere una firma differenziale");
+            assertNotNull(image.getLuminanceSignature(), "Ogni immagine deve avere una firma di luminanza");
+            assertNotNull(image.getChrominanceCbSignature(), "Ogni immagine deve avere una firma cromatica Cb");
+            assertNotNull(image.getChrominanceCrSignature(), "Ogni immagine deve avere una firma cromatica Cr");
         }
 
         long zeroDistanceCount = group.getImages().stream()
-                .filter(image -> image.getBestDistance() == 0.0)
+                .filter(image -> image.getBestDistance() != null && image.getBestDistance() == 0.0)
                 .count();
 
         assertTrue(zeroDistanceCount >= 1, "Almeno un'immagine del gruppo deve avere distanza 0");
     }
-
 
     @Test
     void testFindDuplicates_DoesNotCreateResizedFilesNextToOriginals(@TempDir Path tempDir) throws IOException {
@@ -82,10 +83,12 @@ class DeduplicationServiceTest {
             filesAfter = files.count();
         }
 
-        assertEquals(filesBefore, filesAfter,
-                "Il servizio non deve creare copie ridimensionate nella cartella delle immagini originali");
+        assertEquals(
+                filesBefore,
+                filesAfter,
+                "Il servizio non deve creare copie ridimensionate nella cartella delle immagini originali"
+        );
     }
-
 
     @Test
     void testFindDuplicates_WithCompletelyDifferentImages(@TempDir Path tempDir) throws IOException {
@@ -120,6 +123,64 @@ class DeduplicationServiceTest {
                 exception.getMessage().contains("Errore nella generazione delle caratteristiche"),
                 "Il messaggio deve indicare un errore nella generazione delle caratteristiche"
         );
+    }
+
+    @Test
+    void testFindDuplicates_WithNearDuplicateCompressionOrLightVariation(@TempDir Path tempDir) throws IOException {
+        File original = tempDir.resolve("cat-original.png").toFile();
+        File nearDuplicate = tempDir.resolve("cat-near.png").toFile();
+
+        createNoiseImage(original, 321);
+        createShiftedColorVersion(original, nearDuplicate, 4, 4, 4);
+
+        List<ImageModel> records = List.of(
+                new ImageModel(original.toPath()),
+                new ImageModel(nearDuplicate.toPath())
+        );
+
+        List<DuplicateGroup> groups = deduplicationService.findDuplicates(records);
+
+        assertFalse(groups.isEmpty(), "Le immagini quasi duplicate dovrebbero essere raggruppate");
+        assertEquals(2, groups.get(0).getImages().size(), "Le due immagini dovrebbero appartenere allo stesso gruppo");
+
+        long nonZeroDistanceCount = groups.get(0).getImages().stream()
+                .filter(image -> image.getBestDistance() != null && image.getBestDistance() > 0.0)
+                .count();
+
+        assertTrue(nonZeroDistanceCount >= 1, "Almeno una delle immagini near duplicate deve avere distanza > 0");
+    }
+
+    private void createShiftedColorVersion(File input, File output, int rShift, int gShift, int bShift) throws IOException {
+        BufferedImage original = ImageIO.read(input);
+
+        if (original == null) {
+            throw new IllegalArgumentException("Immagine di input non valida: " + input.getAbsolutePath());
+        }
+
+        BufferedImage modified = new BufferedImage(
+                original.getWidth(),
+                original.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+        );
+
+        for (int y = 0; y < original.getHeight(); y++) {
+            for (int x = 0; x < original.getWidth(); x++) {
+                Color color = new Color(original.getRGB(x, y));
+
+                int r = clamp(color.getRed() + rShift);
+                int g = clamp(color.getGreen() + gShift);
+                int b = clamp(color.getBlue() + bShift);
+
+                Color newColor = new Color(r, g, b);
+                modified.setRGB(x, y, newColor.getRGB());
+            }
+        }
+
+        ImageIO.write(modified, "png", output);
+    }
+
+    private int clamp(int value) {
+        return Math.max(0, Math.min(255, value));
     }
 
     private void createNoiseImage(File file, long seed) throws IOException {
