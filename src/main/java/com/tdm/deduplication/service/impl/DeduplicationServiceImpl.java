@@ -3,6 +3,8 @@ package com.tdm.deduplication.service.impl;
 import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.DeduplicationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -16,6 +18,8 @@ import java.util.List;
 
 @Service
 public class DeduplicationServiceImpl implements DeduplicationService {
+
+    private final static Logger logger = LoggerFactory.getLogger(DeduplicationServiceImpl.class);
 
     // Costanti per gestire la componente della luminanza/generali
     private static final int NORMALIZED_WIDTH = 64;
@@ -78,20 +82,22 @@ public class DeduplicationServiceImpl implements DeduplicationService {
 
         try {
             BufferedImage original = ImageIO.read(image.getFilePath().toFile());
+            int height = 0;
+            int width = 0;
 
             if (original == null) {
-                throw new IllegalStateException("Immagine non leggibile: " + image.getFilePath());
+                logger.error("Immagine non leggibile: {}", image.getFilePath());
             }
 
             temporaryResizedPath = createTemporaryResizedCopy(original);
             BufferedImage resized = ImageIO.read(temporaryResizedPath.toFile());
 
             if (resized == null) {
-                throw new IllegalStateException("Impossibile leggere la copia temporanea ridimensionata: " + temporaryResizedPath);
+                logger.error("Impossibile leggere la copia temporanea ridimensionata: {}", temporaryResizedPath);
+            } else {
+                height = resized.getHeight();
+                width = resized.getWidth();
             }
-
-            int height = resized.getHeight();
-            int width = resized.getWidth();
 
             int[][] luminanceMatrix = new int[height][width];
             double[][] cbMatrix = new double[height][width];
@@ -105,8 +111,11 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                     int g = color.getGreen();
                     int b = color.getBlue();
 
+                    // Applico la funzione di conversione dei canali RGB nella componente Y (luminanza)
                     int yValue = (int) (0.299 * r + 0.587 * g + 0.114 * b);
+                    // Ottengo il valore Cb per la rappresentazione YCbCr (piu utile per il confronto rispetto a RGB)
                     double cbValue = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
+                    // Ottengo il valore Cb per la rappresentazione YCbCr (piu utile per il confronto rispetto a RGB)
                     double crValue = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
 
                     luminanceMatrix[y][x] = yValue;
@@ -120,6 +129,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
             image.setChrominanceCrSignature(buildBlockChrominanceSignature(crMatrix));
 
         } catch (Exception e) {
+            logger.error("Errore nella generazione delle caratteristiche");
             throw new RuntimeException(
                     "Errore nella generazione delle caratteristiche per " + image.getFilePath(),
                     e
@@ -135,6 +145,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         Path temporaryFile = Files.createTempFile("tdm-resized-", ".png");
 
         if (!ImageIO.write(resized, "png", temporaryFile.toFile())) {
+            logger.error("Impossibile salvare la copia temporanea ridimensionata");
             throw new IOException("Impossibile salvare la copia temporanea ridimensionata");
         }
 
@@ -200,6 +211,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
 
     private double averageVectorDistance(double[] first, double[] second) {
         if (first.length != second.length) {
+            logger.error("Le firme cromatiche devono avere la stessa lunghezza");
             throw new IllegalArgumentException("Le firme cromatiche devono avere la stessa lunghezza");
         }
 
@@ -251,6 +263,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
 
     private int hammingDistance(String first, String second) {
         if (first.length() != second.length()) {
+            logger.error("Le firme devono avere la stessa lunghezza");
             throw new IllegalArgumentException("Le firme devono avere la stessa lunghezza");
         }
 

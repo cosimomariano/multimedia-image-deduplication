@@ -13,7 +13,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ExifExtractionServiceImplTest {
+class ExifExtractorServiceTest {
 
     private final ExifExtractionService exifExtractionService = new ExifExtractionServiceImpl();
 
@@ -23,7 +23,7 @@ class ExifExtractionServiceImplTest {
     @Test
     void shouldInitializeEmptyExifMetadataWhenImageHasNoExif() throws Exception {
         Path imagePath = tempDir.resolve("test-no-exif.png");
-        createTestPng(imagePath, 32, 32);
+        createTestPng(imagePath);
 
         ImageModel imageModel = new ImageModel();
 
@@ -60,8 +60,8 @@ class ExifExtractionServiceImplTest {
         assertNull(imageModel.getOriginalDate());
     }
 
-    private void createTestPng(Path outputPath, int width, int height) throws Exception {
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+    private void createTestPng(Path outputPath) throws Exception {
+        BufferedImage image = new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB);
         ImageIO.write(image, "png", outputPath.toFile());
     }
 }

@@ -4,6 +4,8 @@ import com.opencsv.CSVWriter;
 import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.CsvReportService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
@@ -12,6 +14,8 @@ import java.util.List;
 
 @Service
 public class CsvReportServiceImpl implements CsvReportService {
+
+    private final static Logger logger = LoggerFactory.getLogger(CsvReportServiceImpl.class);
 
     @Override
     public void writeReport(List<DuplicateGroup> groups, String outputPath) {
@@ -45,6 +49,7 @@ public class CsvReportServiceImpl implements CsvReportService {
             }
 
         } catch (IOException e) {
+            logger.error("Errore nella scrittura del CSV");
             throw new RuntimeException("Errore nella scrittura del CSV", e);
         }
     }

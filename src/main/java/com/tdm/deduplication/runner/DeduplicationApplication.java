@@ -17,7 +17,7 @@ import java.util.List;
 @SpringBootApplication(scanBasePackages = "com.tdm.deduplication")
 public class DeduplicationApplication implements CommandLineRunner {
 
-    Logger logger = LoggerFactory.getLogger(DeduplicationApplication.class);
+    private final static Logger logger = LoggerFactory.getLogger(DeduplicationApplication.class);
 
     @Autowired
     private ImageScannerService imageScanService;
@@ -35,7 +35,8 @@ public class DeduplicationApplication implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (args.length == 0) {
-            System.out.println("Uso: java -jar app.jar <directory_immagini>");
+            logger.error("Errore, per eseguire correttamente il codice inserire un path da scansionare come argomento: " +
+                    "java -jar app.jar <directory_immagini>");
             return;
         }
 
@@ -43,13 +44,13 @@ public class DeduplicationApplication implements CommandLineRunner {
         String outputCsv = "deduplication-report.csv";
 
         List<ImageModel> images = imageScanService.scan(inputDirectory);
-        System.out.println("Immagini trovate: " + images.size());
         images.forEach(image -> logger.info("Immagine: {}", image));
+        logger.info("Immagini trovate: {}", images.size());
 
         List<DuplicateGroup> groups = deduplicationService.findDuplicates(images);
-        System.out.println("Gruppi duplicati trovati: " + groups.size());
+        logger.info("Gruppi duplicati trovati: {}", groups.size());
 
         csvReportService.writeReport(groups, outputCsv);
-        System.out.println("Report scritto in: " + outputCsv);
+        logger.info("Report scritto in: {}", outputCsv);
     }
 }

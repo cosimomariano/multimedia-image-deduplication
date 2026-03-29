@@ -17,14 +17,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class ImageScannerServiceImpl implements ImageScannerService {
-    final Logger logger = LoggerFactory.getLogger(ImageScannerServiceImpl.class);
+
+    private final static Logger logger = LoggerFactory.getLogger(ImageScannerServiceImpl.class);
 
     private final ExifExtractionService exifExtractionService;
 
@@ -36,8 +34,9 @@ public class ImageScannerServiceImpl implements ImageScannerService {
     public List<ImageModel> scan(String directoryPath) {
         File startFolder = new File(directoryPath);
 
-        // Controllo validità iniziale
+        // Controllo sulla validità della cartella fornita in input
         if (!startFolder.exists() || !startFolder.isDirectory()) {
+            logger.error("Cartella non valida");
             throw new IllegalArgumentException("Directory non valida: " + directoryPath);
         }
 
@@ -102,12 +101,9 @@ public class ImageScannerServiceImpl implements ImageScannerService {
     private ImageModel readImageModel(Path path) {
         try {
             BufferedImage image = readImage(path);
-            if (image == null) {
-                return null;
-            }
 
-            if (image == null) {
-                System.err.println("File non letto come immagine: " + path);
+            if (Objects.isNull(image)) {
+                logger.error("File non letto come immagine: {}", path);
                 return null;
             }
 
@@ -122,7 +118,7 @@ public class ImageScannerServiceImpl implements ImageScannerService {
             return record;
 
         } catch (Exception e) {
-            System.err.println("Errore nella lettura di " + path + ": " + e.getMessage());
+            logger.error("Errore nella lettura di {}: {}", path, e.getMessage());
             return null;
         }
     }

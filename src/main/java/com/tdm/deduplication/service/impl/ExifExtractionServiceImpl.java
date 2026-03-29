@@ -9,6 +9,8 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.exif.GpsDirectory;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.ExifExtractionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -19,6 +21,9 @@ import java.util.Map;
 
 @Service
 public class ExifExtractionServiceImpl implements ExifExtractionService {
+
+    private final static Logger logger = LoggerFactory.getLogger(ExifExtractionServiceImpl.class);
+
 
     @Override
     public void populateMetadata(Path imagePath, ImageModel imageModel) {
@@ -99,6 +104,7 @@ public class ExifExtractionServiceImpl implements ExifExtractionService {
             imageModel.setExifMetadata(exifData);
 
         } catch (Exception ignored) {
+            logger.error("Nessun metadato presente nell'immagine");
             imageModel.setExifMetadata(new LinkedHashMap<>());
         }
     }
