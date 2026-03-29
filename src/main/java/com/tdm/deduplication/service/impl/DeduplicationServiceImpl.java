@@ -87,6 +87,7 @@ public class DeduplicationServiceImpl implements DeduplicationService {
 
             if (original == null) {
                 logger.error("Immagine non leggibile: {}", image.getFilePath());
+                throw new IllegalArgumentException("Immagine non leggibile: " + image.getFilePath());
             }
 
             temporaryResizedPath = createTemporaryResizedCopy(original);
@@ -94,6 +95,9 @@ public class DeduplicationServiceImpl implements DeduplicationService {
 
             if (resized == null) {
                 logger.error("Impossibile leggere la copia temporanea ridimensionata: {}", temporaryResizedPath);
+                throw new IllegalStateException(
+                        "Impossibile leggere la copia temporanea ridimensionata: " + temporaryResizedPath
+                );
             } else {
                 height = resized.getHeight();
                 width = resized.getWidth();
