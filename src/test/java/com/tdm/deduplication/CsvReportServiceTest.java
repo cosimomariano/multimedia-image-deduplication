@@ -1,11 +1,12 @@
 package com.tdm.deduplication;
 
-import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.CsvReportService;
 import com.tdm.deduplication.service.impl.CsvReportServiceImpl;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,31 +18,51 @@ class CsvReportServiceTest {
     private final CsvReportService csvReportService = new CsvReportServiceImpl();
 
     @Test
-    void shouldWriteCsvFileWithDuplicateGroups() {
-        ImageModel img1 = new ImageModel(Path.of("image1.jpg"));
-        img1.setFileSize(1000);
-        img1.setWidth(800);
-        img1.setHeight(600);
-        img1.setFileFormat("JPG");
-        img1.setOriginalDate(LocalDateTime.now());
-        img1.setBestDistance(0);
+    void shouldWriteCsvFileWithAllImagesAndClassification() throws IOException {
+        ImageModel exactDuplicate = new ImageModel(Path.of("image1.jpg"));
+        exactDuplicate.setFileSize(1000);
+        exactDuplicate.setWidth(800);
+        exactDuplicate.setHeight(600);
+        exactDuplicate.setFileFormat("JPG");
+        exactDuplicate.setOriginalDate(LocalDateTime.now());
+        exactDuplicate.setGroupId("GROUP_1");
+        exactDuplicate.setBestDistance(0);
 
-        ImageModel img2 = new ImageModel(Path.of("image2.jpg"));
-        img2.setFileSize(1200);
-        img2.setWidth(800);
-        img2.setHeight(600);
-        img2.setFileFormat("JPG");
-        img2.setOriginalDate(LocalDateTime.now());
-        img2.setBestDistance(10);
+        ImageModel nearDuplicate = new ImageModel(Path.of("image2.jpg"));
+        nearDuplicate.setFileSize(1200);
+        nearDuplicate.setWidth(800);
+        nearDuplicate.setHeight(600);
+        nearDuplicate.setFileFormat("JPG");
+        nearDuplicate.setOriginalDate(LocalDateTime.now());
+        nearDuplicate.setGroupId("GROUP_1");
+        nearDuplicate.setBestDistance(10);
 
-        DuplicateGroup group = new DuplicateGroup("GROUP_1");
-        group.addImage(img1);
-        group.addImage(img2);
+        ImageModel uniqueImage = new ImageModel(Path.of("image3.jpg"));
+        uniqueImage.setFileSize(900);
+        uniqueImage.setWidth(640);
+        uniqueImage.setHeight(480);
+        uniqueImage.setFileFormat("PNG");
+        uniqueImage.setOriginalDate(LocalDateTime.now());
 
-        String outputPath = "test-output.csv";
+        Path outputPath = Path.of("test-output.csv");
 
-        csvReportService.writeReport(List.of(group), outputPath);
+        csvReportService.writeReport(
+                List.of(exactDuplicate, nearDuplicate, uniqueImage),
+                outputPath.toString()
+        );
 
-        assertTrue(java.nio.file.Files.exists(Path.of(outputPath)));
+        assertTrue(Files.exists(outputPath));
+
+        String csvContent = Files.readString(outputPath);
+
+        assertTrue(csvContent.contains("match_type"));
+        assertTrue(csvContent.contains("EXACT_DUPLICATE"));
+        assertTrue(csvContent.contains("NEAR_DUPLICATE"));
+        assertTrue(csvContent.contains("UNIQUE"));
+        assertTrue(csvContent.contains("image1.jpg"));
+        assertTrue(csvContent.contains("image2.jpg"));
+        assertTrue(csvContent.contains("image3.jpg"));
+
+        Files.deleteIfExists(outputPath);
     }
 }

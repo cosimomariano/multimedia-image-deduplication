@@ -50,7 +50,7 @@ public class DeduplicationApplication implements CommandLineRunner {
         List<DuplicateGroup> groups = deduplicationService.findDuplicates(images);
         logger.info("Gruppi duplicati trovati: {}", groups.size());
 
-        csvReportService.writeReport(groups, outputCsv);
+        csvReportService.writeReport(images, outputCsv);
         logger.info("Report scritto in: {}", outputCsv);
     }
 }

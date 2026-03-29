@@ -1,7 +1,6 @@
 package com.tdm.deduplication.service.impl;
 
 import com.opencsv.CSVWriter;
-import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.CsvReportService;
 import org.slf4j.Logger;
@@ -15,13 +14,14 @@ import java.util.List;
 @Service
 public class CsvReportServiceImpl implements CsvReportService {
 
-    private final static Logger logger = LoggerFactory.getLogger(CsvReportServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(CsvReportServiceImpl.class);
 
     @Override
-    public void writeReport(List<DuplicateGroup> groups, String outputPath) {
+    public void writeReport(List<ImageModel> images, String outputPath) {
         try (CSVWriter writer = new CSVWriter(new FileWriter(outputPath))) {
             writer.writeNext(new String[]{
                     "group_id",
+                    "match_type",
                     "file_path",
                     "file_size",
                     "width",
@@ -32,29 +32,38 @@ public class CsvReportServiceImpl implements CsvReportService {
                     "distance"
             });
 
-            for (DuplicateGroup group : groups) {
-                for (ImageModel image : group.getImages()) {
-                    writer.writeNext(new String[]{
-                            group.getGroupId(),
-                            image.getFilePath().toString(),
-                            String.valueOf(image.getFileSize()),
-                            String.valueOf(image.getWidth()),
-                            String.valueOf(image.getHeight()),
-                            image.getFileFormat(),
-                            image.getOriginalDate() != null ? image.getOriginalDate().toString() : "",
-                            serializeExifMetadata(image),
-                            String.valueOf(image.getBestDistance())
-                    });
-                }
+            for (ImageModel image : images) {
+                writer.writeNext(new String[]{
+                        image.getGroupId() != null ? image.getGroupId() : "",
+                        determineMatchType(image),
+                        image.getFilePath().toString(),
+                        String.valueOf(image.getFileSize()),
+                        String.valueOf(image.getWidth()),
+                        String.valueOf(image.getHeight()),
+                        image.getFileFormat(),
+                        image.getOriginalDate() != null ? image.getOriginalDate().toString() : "",
+                        serializeExifMetadata(image),
+                        String.valueOf(image.getBestDistance())
+                });
             }
 
         } catch (IOException e) {
-            logger.error("Errore nella scrittura del CSV");
+            logger.error("Errore nella scrittura del CSV", e);
             throw new RuntimeException("Errore nella scrittura del CSV", e);
         }
     }
 
-    // METODI PRIVATI
+    private String determineMatchType(ImageModel image) {
+        if (image.getGroupId() == null) {
+            return "UNIQUE";
+        }
+
+        if (image.getBestDistance() == 0) {
+            return "EXACT_DUPLICATE";
+        }
+
+        return "NEAR_DUPLICATE";
+    }
 
     private String serializeExifMetadata(ImageModel image) {
         if (image.getExifMetadata() == null || image.getExifMetadata().isEmpty()) {
