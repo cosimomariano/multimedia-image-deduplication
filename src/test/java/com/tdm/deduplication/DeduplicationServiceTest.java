@@ -108,20 +108,18 @@ class DeduplicationServiceTest {
     @Test
     void testFindDuplicates_ThrowsExceptionOnInvalidFile(@TempDir Path tempDir) throws IOException {
         File textFile = tempDir.resolve("falso.jpg").toFile();
-        final boolean isFileCreated = textFile.createNewFile();
+        assertTrue(textFile.createNewFile(), "Il file di test deve essere creato correttamente");
 
-        if (isFileCreated){
-            List<ImageModel> records = List.of(new ImageModel(textFile.toPath()));
+        List<ImageModel> records = List.of(new ImageModel(textFile.toPath()));
 
-            RuntimeException exception = assertThrows(RuntimeException.class, () ->
-                    deduplicationService.findDuplicates(records)
-            );
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                deduplicationService.findDuplicates(records)
+        );
 
-            assertTrue(
-                    exception.getMessage().contains("Errore nella generazione delle caratteristiche"),
-                    "Il messaggio deve indicare un errore nella generazione delle caratteristiche"
-            );
-        }
+        assertTrue(
+                exception.getMessage().contains("Errore nella generazione delle caratteristiche"),
+                "Il messaggio deve indicare un errore nella generazione delle caratteristiche"
+        );
     }
 
     private void createNoiseImage(File file, long seed) throws IOException {
