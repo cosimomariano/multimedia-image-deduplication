@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class CsvReportServiceImpl implements CsvReportService {
@@ -18,6 +21,10 @@ public class CsvReportServiceImpl implements CsvReportService {
 
     @Override
     public void writeReport(List<ImageModel> images, String outputPath) {
+        Map<String, List<ImageModel>> imagesByGroup = images.stream()
+                .filter(image -> image.getGroupId() != null && !image.getGroupId().isBlank())
+                .collect(Collectors.groupingBy(ImageModel::getGroupId));
+
         try (CSVWriter writer = new CSVWriter(new FileWriter(outputPath))) {
             writer.writeNext(new String[]{
                     "group_id",
@@ -35,7 +42,7 @@ public class CsvReportServiceImpl implements CsvReportService {
             for (ImageModel image : images) {
                 writer.writeNext(new String[]{
                         image.getGroupId() != null ? image.getGroupId() : "",
-                        determineMatchType(image),
+                        determineMatchType(image, imagesByGroup),
                         image.getFilePath().toString(),
                         String.valueOf(image.getFileSize()),
                         String.valueOf(image.getWidth()),
@@ -43,7 +50,7 @@ public class CsvReportServiceImpl implements CsvReportService {
                         image.getFileFormat(),
                         image.getOriginalDate() != null ? image.getOriginalDate().toString() : "",
                         serializeExifMetadata(image),
-                        String.valueOf(image.getBestDistance())
+                        image.getGroupId() != null ? String.valueOf(image.getBestDistance()) : ""
                 });
             }
 
@@ -53,16 +60,33 @@ public class CsvReportServiceImpl implements CsvReportService {
         }
     }
 
-    private String determineMatchType(ImageModel image) {
-        if (image.getGroupId() == null) {
+    private String determineMatchType(ImageModel image, Map<String, List<ImageModel>> imagesByGroup) {
+        if (image.getGroupId() == null || image.getGroupId().isBlank()) {
             return "UNIQUE";
         }
 
-        if (image.getBestDistance() == 0) {
+        List<ImageModel> groupImages = imagesByGroup.get(image.getGroupId());
+
+        if (groupImages == null || groupImages.size() <= 1) {
+            return "UNIQUE";
+        }
+
+        boolean hasExactCompanion = groupImages.stream()
+                .filter(other -> other != image)
+                .anyMatch(other -> haveSameFeatures(image, other));
+
+        if (hasExactCompanion) {
             return "EXACT_DUPLICATE";
         }
 
         return "NEAR_DUPLICATE";
+    }
+
+    private boolean haveSameFeatures(ImageModel first, ImageModel second) {
+        return first.getDifferentialSignature() != null
+                && first.getDifferentialSignature().equals(second.getDifferentialSignature())
+                && Arrays.equals(first.getChrominanceCbSignature(), second.getChrominanceCbSignature())
+                && Arrays.equals(first.getChrominanceCrSignature(), second.getChrominanceCrSignature());
     }
 
     private String serializeExifMetadata(ImageModel image) {

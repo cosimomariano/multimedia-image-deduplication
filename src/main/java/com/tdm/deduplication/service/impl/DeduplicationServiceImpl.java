@@ -45,12 +45,11 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                 continue;
             }
 
-            String groupId = "GROUP_" + groupCounter++;
-            DuplicateGroup group = new DuplicateGroup(groupId);
+            List<ImageModel> matchedImages = new ArrayList<>();
+            List<Double> matchedDistances = new ArrayList<>();
 
-            current.setGroupId(groupId);
-            current.setBestDistance(0);
-            group.addImage(current);
+            matchedImages.add(current);
+            matchedDistances.add(0.0);
 
             for (ImageModel candidate : images) {
                 if (candidate == current || candidate.getGroupId() != null) {
@@ -63,14 +62,26 @@ public class DeduplicationServiceImpl implements DeduplicationService {
                 );
 
                 if (luminanceDistance <= HAMMING_THRESHOLD && isChrominanceSimilar(current, candidate)) {
-                    candidate.setGroupId(groupId);
-                    candidate.setBestDistance(luminanceDistance);
-                    group.addImage(candidate);
+                    matchedImages.add(candidate);
+                    matchedDistances.add((double) luminanceDistance);
                 }
             }
 
-            if (group.getImages().size() > 1) {
+            if (matchedImages.size() > 1) {
+                String groupId = "GROUP_" + groupCounter++;
+                DuplicateGroup group = new DuplicateGroup(groupId);
+
+                for (int i = 0; i < matchedImages.size(); i++) {
+                    ImageModel matched = matchedImages.get(i);
+                    matched.setGroupId(groupId);
+                    matched.setBestDistance(matchedDistances.get(i));
+                    group.addImage(matched);
+                }
+
                 groups.add(group);
+            } else {
+                current.setGroupId(null);
+                current.setBestDistance(-1);
             }
         }
 
