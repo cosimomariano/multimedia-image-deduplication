@@ -26,12 +26,12 @@ public class DeduplicationServiceImpl implements DeduplicationService {
     private static final int NORMALIZED_HEIGHT = 64;
 
     // Similarità di luminanza
-    private static final double LUMINANCE_MSE_THRESHOLD = 400.0;
+    private static final double LUMINANCE_MSE_THRESHOLD = 600.0;
 
     // Similarità cromatica
     private static final int CHROMA_GRID_ROWS = 8;
     private static final int CHROMA_GRID_COLS = 8;
-    private static final double CHROMA_DISTANCE_THRESHOLD = 60.0;
+    private static final double CHROMA_DISTANCE_THRESHOLD = 35.0;
 
     @Override
     public List<DuplicateGroup> findDuplicates(List<ImageModel> images) {
