@@ -1,0 +1,12 @@
+# Runtime
+Java >= 17
+
+# Build tool
+Maven >= 3.8
+
+# Dipendenze principali (vedi pom.xml)
+spring-context
+slf4j-api
+logback-classic
+metadata-extractor
+opencsv
