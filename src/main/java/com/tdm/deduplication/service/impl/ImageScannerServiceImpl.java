@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -112,8 +113,6 @@ public class ImageScannerServiceImpl implements ImageScannerService {
             record.setHeight(image.getHeight());
             record.setFileFormat(getExtension(path));
 
-            exifExtractionService.populateMetadata(path, record);
-
             return record;
 
         } catch (Exception e) {
@@ -125,12 +124,12 @@ public class ImageScannerServiceImpl implements ImageScannerService {
     private BufferedImage readImage(Path path) {
         try {
             BufferedImage image = ImageIO.read(path.toFile());
-            if (image != null) {
-                return image;
+            if (image == null) {
+                logger.error("Immagine non supportata o file non valido: {}", path);
+                throw new IOException("Formato immagine non supportato o file non valido: " + path);
             }
 
-            return javax.imageio.ImageIO.read(path.toFile());
-
+            return image;
         } catch (Exception e) {
             return null;
         }

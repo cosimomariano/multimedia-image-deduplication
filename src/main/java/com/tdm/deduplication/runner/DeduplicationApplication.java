@@ -4,6 +4,7 @@ import com.tdm.deduplication.model.DuplicateGroup;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.service.CsvReportService;
 import com.tdm.deduplication.service.DeduplicationService;
+import com.tdm.deduplication.service.ExifExtractionService;
 import com.tdm.deduplication.service.ImageScannerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.nio.file.Path;
 import java.util.List;
 
 @SpringBootApplication(scanBasePackages = "com.tdm.deduplication")
@@ -27,6 +29,9 @@ public class DeduplicationApplication implements CommandLineRunner {
 
     @Autowired
     private CsvReportService csvReportService;
+
+    @Autowired
+    private ExifExtractionService exifExtractionService;
 
     public static void main(String[] args) {
         SpringApplication.run(DeduplicationApplication.class, args);
@@ -46,6 +51,9 @@ public class DeduplicationApplication implements CommandLineRunner {
         List<ImageModel> images = imageScanService.scan(inputDirectory);
         images.forEach(image -> logger.info("Immagine: {}", image));
         logger.info("Immagini trovate: {}", images.size());
+
+        images.forEach(imageModel -> exifExtractionService.populateMetadata(Path.of(inputDirectory), imageModel));
+        logger.info("Metadati salvati all'interno dei model.");
 
         List<DuplicateGroup> groups = deduplicationService.findDuplicates(images);
         logger.info("Gruppi duplicati trovati: {}", groups.size());

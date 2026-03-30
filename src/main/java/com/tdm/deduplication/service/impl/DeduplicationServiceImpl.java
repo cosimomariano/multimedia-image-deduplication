@@ -183,6 +183,24 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         return temporaryFile;
     }
 
+    private BufferedImage resize(BufferedImage source) {
+        BufferedImage resized = new BufferedImage(
+                NORMALIZED_WIDTH,
+                NORMALIZED_HEIGHT,
+                BufferedImage.TYPE_INT_RGB
+        );
+
+        Graphics2D graphics = resized.createGraphics();
+        graphics.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BILINEAR
+        );
+        graphics.drawImage(source, 0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT, null);
+        graphics.dispose();
+
+        return resized;
+    }
+
     private void deleteTemporaryFile(Path temporaryFile) {
         if (temporaryFile == null) {
             return;
@@ -254,23 +272,5 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         }
 
         return sum / first.length;
-    }
-
-    private BufferedImage resize(BufferedImage source) {
-        BufferedImage resized = new BufferedImage(
-                NORMALIZED_WIDTH,
-                NORMALIZED_HEIGHT,
-                BufferedImage.TYPE_INT_RGB
-        );
-
-        Graphics2D graphics = resized.createGraphics();
-        graphics.setRenderingHint(
-                RenderingHints.KEY_INTERPOLATION,
-                RenderingHints.VALUE_INTERPOLATION_BILINEAR
-        );
-        graphics.drawImage(source, 0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT, null);
-        graphics.dispose();
-
-        return resized;
     }
 }
