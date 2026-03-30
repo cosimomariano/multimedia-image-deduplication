@@ -42,7 +42,7 @@ Il sistema segue la seguente pipeline:
   - Separazione modulare dei servizi per un codice manutenibile.
 
 ## Argomenti del corso trattati
-Il nostro progetto copre direttamente i seguenti argomenti teorici del corso:
+Il progetto copre direttamente i seguenti argomenti teorici del corso:
 
   - Rappresentazione digitale delle immagini.
   - Formati di immagine e metadati EXIF.

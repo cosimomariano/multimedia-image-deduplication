@@ -18,16 +18,7 @@ public class CsvReportServiceImpl implements CsvReportService {
 
     private static final Logger logger = LoggerFactory.getLogger(CsvReportServiceImpl.class);
 
-    /**
-     * Soglia molto stretta per dire che due immagini sono praticamente identiche
-     * dopo la normalizzazione.
-     */
     private static final double EXACT_LUMINANCE_MSE_THRESHOLD = 1.0;
-
-    /**
-     * Soglia molto stretta sulla crominanza per distinguere un duplicato esatto
-     * da un quasi duplicato.
-     */
     private static final double EXACT_CHROMA_DISTANCE_THRESHOLD = 1.0;
 
     @Override

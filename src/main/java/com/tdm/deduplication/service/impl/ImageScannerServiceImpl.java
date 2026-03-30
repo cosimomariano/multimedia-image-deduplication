@@ -1,8 +1,5 @@
 package com.tdm.deduplication.service.impl;
 
-import com.drew.imaging.ImageMetadataReader;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.model.utility.SupportedExtensionsEnum;
 import com.tdm.deduplication.service.ExifExtractionService;
@@ -16,8 +13,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 public class ImageScannerServiceImpl implements ImageScannerService {
@@ -134,28 +133,6 @@ public class ImageScannerServiceImpl implements ImageScannerService {
 
         } catch (Exception e) {
             return null;
-        }
-    }
-
-    /*
-        Leggo i metadati EXIF del file immagine
-     */
-    private void readExifDate(Path path, ImageModel record) {
-        try {
-            Metadata metadata = ImageMetadataReader.readMetadata(path.toFile());
-            ExifSubIFDDirectory exifDirectory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-
-            if (exifDirectory != null && exifDirectory.containsTag(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)) {
-                Date date = exifDirectory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
-                if (date != null) {
-                    record.setOriginalDate(
-                            date.toInstant()
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDateTime()
-                    );
-                }
-            }
-        } catch (Exception ignored) {
         }
     }
 

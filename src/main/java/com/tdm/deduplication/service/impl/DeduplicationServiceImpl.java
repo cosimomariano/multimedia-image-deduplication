@@ -160,10 +160,6 @@ public class DeduplicationServiceImpl implements DeduplicationService {
             image.setLuminanceSignature(luminanceSignature);
             image.setChrominanceCbSignature(buildBlockChrominanceSignature(cbMatrix));
             image.setChrominanceCrSignature(buildBlockChrominanceSignature(crMatrix));
-
-            // campi vecchi non più usati nel matching
-            image.setDifferentialSignature(null);
-
         } catch (Exception e) {
             logger.error("Errore nella generazione delle caratteristiche", e);
             throw new RuntimeException(
@@ -243,21 +239,6 @@ public class DeduplicationServiceImpl implements DeduplicationService {
         }
 
         return signature;
-    }
-
-    private boolean isChrominanceSimilar(ImageModel first, ImageModel second) {
-        double cbDistance = averageVectorDistance(
-                first.getChrominanceCbSignature(),
-                second.getChrominanceCbSignature()
-        );
-
-        double crDistance = averageVectorDistance(
-                first.getChrominanceCrSignature(),
-                second.getChrominanceCrSignature()
-        );
-
-        return cbDistance <= CHROMA_DISTANCE_THRESHOLD
-                && crDistance <= CHROMA_DISTANCE_THRESHOLD;
     }
 
     private double averageVectorDistance(double[] first, double[] second) {

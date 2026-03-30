@@ -14,7 +14,6 @@ public class ImageModel {
     private String fileFormat;
     private LocalDateTime originalDate;
 
-    private String differentialSignature;
     private String groupId;
     private Double  bestDistance;
 
@@ -109,14 +108,6 @@ public class ImageModel {
 
     public void setOriginalDate(LocalDateTime originalDate) {
         this.originalDate = originalDate;
-    }
-
-    public String getDifferentialSignature() {
-        return differentialSignature;
-    }
-
-    public void setDifferentialSignature(String differentialSignature) {
-        this.differentialSignature = differentialSignature;
     }
 
     public String getGroupId() {
