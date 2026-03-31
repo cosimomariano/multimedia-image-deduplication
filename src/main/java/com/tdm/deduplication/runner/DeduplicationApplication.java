@@ -13,7 +13,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.nio.file.Path;
 import java.util.List;
 
 @SpringBootApplication(scanBasePackages = "com.tdm.deduplication")
@@ -52,7 +51,7 @@ public class DeduplicationApplication implements CommandLineRunner {
         images.forEach(image -> logger.info("Immagine: {}", image));
         logger.info("Immagini trovate: {}", images.size());
 
-        images.forEach(imageModel -> exifExtractionService.populateMetadata(Path.of(inputDirectory), imageModel));
+        images.forEach(imageModel -> exifExtractionService.populateMetadata(imageModel.getFilePath(), imageModel));
         logger.info("Metadati salvati all'interno dei model.");
 
         List<DuplicateGroup> groups = deduplicationService.findDuplicates(images);
