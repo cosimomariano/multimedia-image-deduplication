@@ -3,53 +3,61 @@
 ## Multimedia Image Deduplication
 
 ## Descrizione del problema
-Il progetto si concentra sulla risoluzione del problema della deduplicazione di immagini all'interno di una directory del file system e sull'estrazione dei metadati EXIF. L'obiettivo è produrre un report strutturato che identifichi le immagini duplicate, quelle quasi duplicate e quelle uniche. Il sistema si basa su caratteristiche percettive dell'immagine e metadati per raggiungere questo obiettivo.
+Il progetto si concentra sulla risoluzione del problema della deduplicazione di immagini all'interno di una directory del file system e sull'estrazione dei metadati EXIF. 
+L'obiettivo è produrre un report strutturato (file .CSV) che identifichi le immagini duplicate, quelle quasi duplicate e quelle uniche.
+Il sistema si basa su caratteristiche percettive dell'immagine ed i metadati ad essa associati per raggiungere questo obiettivo.
+
 Il sistema è in grado di individuare immagini:
 
-  - Duplicate esatte
-  - Quasi duplicate, ovvero visivamente simili
-  - Uniche
-
-Tutto ciò si basa su caratteristiche percettive dell'immagine e metadati.
+- Duplicate esatte
+- Quasi duplicate, ovvero visivamente simili
+- Uniche
 
 ## Obiettivi
-L'obiettivo principale del nostro sistema è identificare e raggruppare immagini in base alla loro similarità visiva. Ciò avviene attraverso:
+L'obiettivo principale del sistema è identificare e raggruppare immagini in base alla loro similarità visiva.
+Ciò avviene attraverso:
 
-  - Analisi della luminanza, che rappresenta la struttura dell'immagine
-  - Analisi della crominanza, che rappresenta il colore
-  - Estrazione e gestione dei metadati EXIF
+- Analisi della luminanza (struttura dell'immagine)
+- Analisi della crominanza (informazione di colore)
+- Estrazione e gestione dei metadati EXIF
 
-Il sistema restituisce gruppi di immagini duplicate o quasi duplicate e produce un report strutturato.
+Il sistema restituisce gruppi di immagini duplicate o quasi duplicate e produce un report strutturato (file .CSV).
+
+---
 
 ## Pipeline del sistema
 Il sistema segue la seguente pipeline:
 
-  1. **Scansione**: lettura ricorsiva della directory fornita dall'utente e filtraggio per formati supportati come JPG, JPEG, PNG e TIFF.
-  2. **Estrazione metadati EXIF**: lettura dei metadati tramite la libreria `metadata-extractor` e salvataggio in una struttura dati associata all'immagine.
-  3. **Normalizzazione**: ridimensionamento delle immagini a 64x64 e uniformazione dello spazio di confronto.
-  4. **Conversione spazio colore**: conversione da RGB a YCbCr e separazione in luminanza e crominanza.
-  5. **Estrazione feature luminanza**: costruzione di una firma differenziale binaria basata su variazioni locali tra pixel adiacenti.
-  6. **Estrazione feature cromatiche**: suddivisione dell'immagine in una griglia 8x8 e calcolo della media dei valori Cb e Cr per ogni blocco.
-  7. **Confronto tra immagini**: distanza di Hamming sulla firma di luminanza e distanza media assoluta sulle firme cromatiche.
-  8. **Clustering**: approccio greedy per la creazione di gruppi di duplicati.
-  9. **Reportistica**: generazione di un file CSV contenente gruppi, proprietà dell'immagine, metadati EXIF e distanza.
+1. **Scansione**: lettura ricorsiva della directory fornita dall'utente e filtraggio per formati supportati censiti in apposito enumerativo: JPG, JPEG, PNG, TIFF.
+2. **Estrazione metadati EXIF**: lettura dei metadati tramite la libreria `metadata-extractor` e salvataggio in una struttura dati (Key-Value Map) associata all'immagine.
+3. **Normalizzazione**: ridimensionamento delle immagini a 64x64 per uniformare lo spazio di confronto.
+4. **Conversione spazio colore**: conversione da RGB a YCbCr per separare luminanza e crominanza.
+5. **Estrazione feature luminanza**: costruzione di una firma numerica basata sui valori di luminanza Y dei pixel.
+6. **Estrazione feature cromatiche**: suddivisione dell'immagine in una griglia 8x8 e calcolo della media dei valori Cb e Cr per ogni blocco.
+7. **Confronto tra immagini**:
+    - Mean Squared Error (MSE) sulla componente della luminanza
+    - Mean Absolute Error (MAE) sulle componenti della crominanza
+8. **Raggruppamento**: aggregazione delle immagini in gruppi (GROUP_{id}) sulla base di soglie empiriche di similarità.
+9. **Reportistica**: generazione di un file CSV contenente gruppi, proprietà dell'immagine, metadati EXIF e distanza.
 
 ## Scelte progettuali principali
-  - Uso dello spazio colore YCbCr per separare in modo netto la struttura dal colore.
-  - Uso di una firma differenziale binaria per rappresentare la luminanza in modo compatto.
-  - Uso della distanza di Hamming per un confronto binario rapido ed efficiente.
-  - Uso di medie a blocchi per descrivere la crominanza riducendo il rumore.
-  - Separazione modulare dei servizi per un codice manutenibile.
+- Uso dello spazio colore YCbCr per separare struttura (luminanza) e colore (crominanza).
+- Rappresentazione della luminanza tramite firma numerica (array di double).
+- Uso della Mean Squared Error (MSE) per il confronto strutturale tra immagini.
+- Uso della Mean Absolute Error (MAE) per il confronto delle componenti cromatiche.
+- Uso di medie a blocchi per ridurre il rumore cromatico potenzialmente riscontrabile.
+- Architettura modulare a servizi per garantire manutenibilità ed estensibilità per future nuove implementazioni o rivisitazioni del codice.
 
 ## Argomenti del corso trattati
 Il progetto copre direttamente i seguenti argomenti teorici del corso:
 
-  - Rappresentazione digitale delle immagini.
-  - Formati di immagine e metadati EXIF.
-  - Modelli di colore come RGB e YCbCr.
-  - Database multimediali e strutturazione e interrogazione dati.
-  - Computer vision di base come estrazione di feature e confronto tra immagini.
-  - Predizione spaziale e differenze locali, concetti base collegati alla compressione lossless.
+- Rappresentazione digitale delle immagini.
+- Formati di immagine e metadati EXIF.
+- Modelli di colore (RGB, YCbCr).
+- Database multimediali e strutturazione dei dati.
+- Computer vision di base:
+    - estrazione di feature
+    - confronto tra immagini
 
 ## Struttura del progetto
 Il progetto ha la seguente struttura:
