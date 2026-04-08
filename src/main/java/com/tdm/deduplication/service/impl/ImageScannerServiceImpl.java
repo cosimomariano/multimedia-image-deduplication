@@ -2,7 +2,6 @@ package com.tdm.deduplication.service.impl;
 
 import com.tdm.deduplication.model.ImageModel;
 import com.tdm.deduplication.model.utility.SupportedExtensionsEnum;
-import com.tdm.deduplication.service.ExifExtractionService;
 import com.tdm.deduplication.service.ImageScannerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,12 +22,6 @@ import java.util.Objects;
 public class ImageScannerServiceImpl implements ImageScannerService {
 
     private final static Logger logger = LoggerFactory.getLogger(ImageScannerServiceImpl.class);
-
-    private final ExifExtractionService exifExtractionService;
-
-    public ImageScannerServiceImpl(ExifExtractionService exifExtractionService) {
-        this.exifExtractionService = exifExtractionService;
-    }
 
     @Override
     public List<ImageModel> scan(String directoryPath) {

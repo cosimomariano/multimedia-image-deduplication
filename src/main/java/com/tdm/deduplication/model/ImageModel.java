@@ -21,7 +21,16 @@ public class ImageModel {
     private double[] chrominanceCbSignature;
     private double[] chrominanceCrSignature;
 
+    private String matchType;
     private Map<String, String> exifMetadata = new LinkedHashMap<>();
+
+    public String getMatchType() {
+        return matchType;
+    }
+
+    public void setMatchType(String matchType) {
+        this.matchType = matchType;
+    }
 
     public double[] getLuminanceSignature() {
         return luminanceSignature;
